@@ -4,28 +4,60 @@ import numpy as np
 import tensorflow as tf
 import pandas as pd
 import io
-import re
 import ast
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
+from kaggle.api.kaggle_api_extended import KaggleApi
 
-MODEL_PATH = "../model/mobilenet_recipe_ai_ingredients.h5"
-DATASET_PATH = "../data/RecipeNLG_dataset.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
+MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'mobilenet_recipe_ai_ingredients.h5')
+
+
+KAGGLE_DATASET = 'paultimothymooney/recipenlg'  
+DATA_FILE = 'RecipeNLG_dataset.csv' 
+LOCAL_DATA_PATH = os.path.join(BASE_DIR, '..', 'data', DATA_FILE)
+
 CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate',
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
+
+def setup_kaggle_token():
+    kaggle_dir = os.path.expanduser("~/.kaggle")
+    os.makedirs(kaggle_dir, exist_ok=True)
+    kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
+
+    if not os.path.exists(kaggle_json_path):
+        if "KAGGLE_JSON" in st.secrets:
+            with open(kaggle_json_path, "w") as f:
+                f.write(st.secrets["KAGGLE_JSON"])
+            os.chmod(kaggle_json_path, 0o600)
+        else:
+            st.warning("Kaggle API token not found.")
+            return False
+    return True
+
+@st.cache_resource(show_spinner=False)
+def download_and_load_dataset():
+    if not setup_kaggle_token():
+        return None
+
+    api = KaggleApi()
+    api.authenticate()
+
+    if not os.path.exists(LOCAL_DATA_PATH):
+        st.info("Downloading dataset from Kaggle...")
+        api.dataset_download_file(KAGGLE_DATASET, DATA_FILE, path=os.path.join(BASE_DIR, '..', 'data'), unzip=True)
+
+    df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
+    df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+    df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
+    df["NER_str"] = df["NER_list"].apply(lambda lst: " ".join(lst))
+    return df
 
 @st.cache_resource
 def load_classification_model(path=MODEL_PATH):
     model = tf.keras.models.load_model(path)
     return model
-
-@st.cache_resource
-def load_recipe_data(path=DATASET_PATH):
-    df = pd.read_csv(path).dropna().reset_index(drop=True)
-    df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-    df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
-    df["NER_str"] = df["NER_list"].apply(lambda lst: " ".join(lst))
-    return df
 
 @st.cache_resource
 def prepare_search_model(df):
@@ -77,7 +109,6 @@ st.title("🥗 Recipe AI")
 
 col1, spacer, col2 = st.columns([1, 0.2, 2])
 
-
 with col1:
     st.header("📸 Upload ingredient photo")
     uploaded_file = st.file_uploader("Send an image (jpg, png)", type=["jpg", "jpeg", "png"])
@@ -99,7 +130,11 @@ with col1:
             st.markdown(f"**{top_label.capitalize()}**")
 
             with st.spinner("⏳ Loading recipes and search model..."):
-                df = load_recipe_data(DATASET_PATH)
+                df = download_and_load_dataset()
+                if df is None:
+                    st.error("Could not load dataset.")
+                    st.stop()
+
                 vectorizer, nn = prepare_search_model(df)
 
             with st.spinner("⏳ Searching for recipes..."):
