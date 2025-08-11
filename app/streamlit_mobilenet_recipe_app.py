@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import tensorflow as tf
+import tensorflow as keras
 import pandas as pd
 import io
 import ast
@@ -56,7 +56,7 @@ def download_and_load_dataset():
 
 @st.cache_resource
 def load_classification_model(path=MODEL_PATH):
-    model = tf.keras.models.load_model(path)
+    model = keras.models.load_model(path)
     return model
 
 @st.cache_resource
