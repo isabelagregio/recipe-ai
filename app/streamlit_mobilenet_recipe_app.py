@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-import tensorflow as keras
+import tensorflow as tf
 import pandas as pd
 import io
 import ast
@@ -19,8 +19,24 @@ DATA_FILE = 'RecipeNLG_dataset.csv'
 CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate',
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
 
+def setup_kaggle_token():
+    kaggle_dir = os.path.expanduser("~/.kaggle")
+    os.makedirs(kaggle_dir, exist_ok=True)
+    kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
+
+    if not os.path.exists(kaggle_json_path):
+        if "KAGGLE_JSON" in st.secrets:
+            with open(kaggle_json_path, "w") as f:
+                f.write(st.secrets["KAGGLE_JSON"])
+            os.chmod(kaggle_json_path, 0o600)
+        else:
+            st.warning("Kaggle API token not found.")
+            return False
+    return True
+
 @st.cache_data(show_spinner=False)
 def download_and_load_dataset():
+    
     conn = st.connection("kaggle_datasets", type=KaggleDatasetConnection)
     
     df = conn.get(path=KAGGLE_DATASET, filename=DATA_FILE, ttl=3600)
@@ -33,7 +49,7 @@ def download_and_load_dataset():
 
 @st.cache_resource
 def load_classification_model(path=MODEL_PATH):
-    model = keras.models.load_model(path)
+    model = tf.keras.models.load_model(path)
     return model
 
 @st.cache_resource
@@ -47,7 +63,7 @@ def prepare_search_model(df):
 def preprocess_image(pil_image, target_size=(224, 224)):
     img = pil_image.convert('RGB').resize(target_size)
     x = np.array(img).astype(np.float32)
-    x = keras.applications.mobilenet_v2.preprocess_input(x)
+    x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
     x = np.expand_dims(x, axis=0)
     return x
 
