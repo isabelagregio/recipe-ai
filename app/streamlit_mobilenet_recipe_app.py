@@ -8,47 +8,24 @@ import ast
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
-from kaggle.api.kaggle_api_extended import KaggleApi
+from st_kaggle_connector import KaggleDatasetConnection
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
 MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'mobilenet_recipe_ai_ingredients.h5')
 
-
 KAGGLE_DATASET = 'paultimothymooney/recipenlg'  
 DATA_FILE = 'RecipeNLG_dataset.csv' 
-LOCAL_DATA_PATH = os.path.join(BASE_DIR, '..', 'data', DATA_FILE)
 
 CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate',
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
 
-def setup_kaggle_token():
-    kaggle_dir = os.path.expanduser("~/.kaggle")
-    os.makedirs(kaggle_dir, exist_ok=True)
-    kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
-
-    if not os.path.exists(kaggle_json_path):
-        if "KAGGLE_JSON" in st.secrets:
-            with open(kaggle_json_path, "w") as f:
-                f.write(st.secrets["KAGGLE_JSON"])
-            os.chmod(kaggle_json_path, 0o600)
-        else:
-            st.warning("Kaggle API token not found.")
-            return False
-    return True
-
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def download_and_load_dataset():
-    if not setup_kaggle_token():
-        return None
-
-    api = KaggleApi()
-    api.authenticate()
-
-    if not os.path.exists(LOCAL_DATA_PATH):
-        st.info("Downloading dataset from Kaggle...")
-        api.dataset_download_file(KAGGLE_DATASET, DATA_FILE, path=os.path.join(BASE_DIR, '..', 'data'), unzip=True)
-
-    df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
+    conn = st.connection("kaggle_datasets", type=KaggleDatasetConnection)
+    
+    df = conn.get(path=KAGGLE_DATASET, filename=DATA_FILE, ttl=3600)
+    
+    df = df.dropna().reset_index(drop=True)
     df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
     df["NER_str"] = df["NER_list"].apply(lambda lst: " ".join(lst))
@@ -70,7 +47,7 @@ def prepare_search_model(df):
 def preprocess_image(pil_image, target_size=(224, 224)):
     img = pil_image.convert('RGB').resize(target_size)
     x = np.array(img).astype(np.float32)
-    x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
+    x = keras.applications.mobilenet_v2.preprocess_input(x)
     x = np.expand_dims(x, axis=0)
     return x
 
