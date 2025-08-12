@@ -7,4 +7,3 @@ streamlit
 tensorflow==2.19.0
 numpy
 pillow
-kaggle==1.7.4.5

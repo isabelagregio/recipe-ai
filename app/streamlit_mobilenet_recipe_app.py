@@ -8,8 +8,6 @@ import ast
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
-from kaggle.api.kaggle_api_extended import KaggleApi
-import json 
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
@@ -23,43 +21,23 @@ LOCAL_DATA_PATH = os.path.join(BASE_DIR, '..', 'data', DATA_FILE)
 CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate',
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
 
-def setup_kaggle_token():
-    try:
-        has_username = "KAGGLE_USERNAME" in st.secrets
-        has_key = "KAGGLE_KEY" in st.secrets
-    except Exception:
-        has_username = False
-        has_key = False
-
-    if has_username and has_key:
-        os.environ["KAGGLE_USERNAME"] = st.secrets["KAGGLE_USERNAME"]
-        os.environ["KAGGLE_KEY"] = st.secrets["KAGGLE_KEY"]
-        return True
-    else:
-        kaggle_dir = os.path.expanduser("~/.kaggle")
-        kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
-        if os.path.exists(kaggle_json_path):
-            return True
-        else:
-            st.warning("Kaggle credentials not found: neither env vars in secrets nor kaggle.json file.")
-            return False
 
 @st.cache_resource(show_spinner=False)
 def download_and_load_dataset():
-    if not setup_kaggle_token():
-        return None
+    import os
+    import pandas as pd
+    import ast
 
-    api = KaggleApi()
-    api.authenticate()
+    file_path = os.path.join("..", "data", "Recipe_dataset.csv")
 
-    if not os.path.exists(LOCAL_DATA_PATH):
-        st.info("Downloading dataset from Kaggle...")
-        api.dataset_download_file(KAGGLE_DATASET, DATA_FILE, path=os.path.join(BASE_DIR, '..', 'data'), unzip=True)
+    df = pd.read_csv(file_path)
 
-    df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
+    df = df.dropna().reset_index(drop=True)
+
     df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
     df["NER_str"] = df["NER_list"].apply(lambda lst: " ".join(lst))
+
     return df
 
 @st.cache_resource
