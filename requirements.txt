@@ -4,6 +4,7 @@ pandas
 scikit-learn
 python-multipart
 streamlit
-tensorflow==2.12.0
+tensorflow==2.19.0
 numpy
 pillow
+kaggle
