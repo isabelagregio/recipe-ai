@@ -8,13 +8,17 @@ import ast
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
-from st_kaggle_connector import KaggleDatasetConnection
+from kaggle.api.kaggle_api_extended import KaggleApi
+
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
-MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'mobilenet_recipe_ai_ingredients.h5')
+MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'mobilenet_recipe_ai_ingredients.keras')
 
 KAGGLE_DATASET = 'paultimothymooney/recipenlg'  
 DATA_FILE = 'RecipeNLG_dataset.csv' 
+LOCAL_DATA_PATH = os.path.join(BASE_DIR, '..', 'data', DATA_FILE)
+
 
 CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate',
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
@@ -34,14 +38,19 @@ def setup_kaggle_token():
             return False
     return True
 
-@st.cache_data(show_spinner=False)
+@st.cache_resource(show_spinner=False)
 def download_and_load_dataset():
-    
-    conn = st.connection("kaggle_datasets", type=KaggleDatasetConnection)
-    
-    df = conn.get(path=KAGGLE_DATASET, filename=DATA_FILE, ttl=3600)
-    
-    df = df.dropna().reset_index(drop=True)
+    if not setup_kaggle_token():
+        return None
+
+    api = KaggleApi()
+    api.authenticate()
+
+    if not os.path.exists(LOCAL_DATA_PATH):
+        st.info("Downloading dataset from Kaggle...")
+        api.dataset_download_file(KAGGLE_DATASET, DATA_FILE, path=os.path.join(BASE_DIR, '..', 'data'), unzip=True)
+
+    df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
     df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
     df["NER_str"] = df["NER_list"].apply(lambda lst: " ".join(lst))
