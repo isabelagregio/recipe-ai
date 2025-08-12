@@ -28,7 +28,7 @@ def download_and_load_dataset():
     import pandas as pd
     import ast
 
-    file_path = os.path.join("..", "data", "Recipe_dataset.csv")
+    file_path = os.path.join(BASE_DIR, "..", "data", "Recipe_dataset.csv")
 
     df = pd.read_csv(file_path)
 
