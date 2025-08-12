@@ -91,56 +91,64 @@ def find_similar_recipes(ingredients_list, df, vectorizer, nn):
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Recipe AI", layout="wide")
-st.title("🥗 Recipe AI")
+st.markdown("<h1 style='color:#008DF5;'>🥗 Recipe AI</h1>", unsafe_allow_html=True)
 
 col1, spacer, col2 = st.columns([1, 0.2, 2])
 
 with col1:
-    st.header("📸 Upload ingredient photo")
-    uploaded_file = st.file_uploader("Send an image (jpg, png)", type=["jpg", "jpeg", "png"])
+    st.markdown("<h2 style='color:#008DF5;'>📸 Upload ingredient photos</h2>", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader(
+        "Send up to 5 images (jpg, png)",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True
+    )
 
-    if uploaded_file is not None:
-        image_data = Image.open(io.BytesIO(uploaded_file.read()))
-        st.image(image_data, caption="Image sent", use_container_width=False, width=250)
+    if uploaded_files and len(uploaded_files) > 5:
+        st.warning("⚠ You can upload a maximum of 5 images.")
+        uploaded_files = uploaded_files[:5]
 
-        if st.button("🔍 Identify ingredient"):
-            with st.spinner("⏳ Loading classification model..."):
-                model = load_classification_model(MODEL_PATH)
+    if uploaded_files and st.button("🔍 Identify ingredients"):
+        with st.spinner("⏳ Loading classification model..."):
+            model = load_classification_model(MODEL_PATH)
 
-            with st.spinner("⏳ Predicting..."):
-                results, probs = predict(image_data, model, top_k=3)
-
+        detected_labels = []
+        for uploaded_file in uploaded_files:
+            image_data = Image.open(io.BytesIO(uploaded_file.read()))
+            st.image(image_data, caption=f"Uploaded: {uploaded_file.name}", width=200)
+            results, probs = predict(image_data, model, top_k=1)
             top_label, top_prob, _ = results[0]
+            detected_labels.append(top_label)
 
-            st.markdown("### 🍽 Detected Ingredient")
-            st.markdown(f"**{top_label.capitalize()}**")
+        st.session_state["detected_labels"] = detected_labels
 
-            with st.spinner("⏳ Loading recipes and search model..."):
-                df = download_and_load_dataset()
-                if df is None:
-                    st.error("Could not load dataset.")
-                    st.stop()
+        with st.spinner("⏳ Loading recipes and search model..."):
+            df = download_and_load_dataset()
+            if df is None:
+                st.error("Could not load dataset.")
+                st.stop()
 
-                vectorizer, nn = prepare_search_model(df)
+            vectorizer, nn = prepare_search_model(df)
 
-            with st.spinner("⏳ Searching for recipes..."):
-                recipes = find_similar_recipes([top_label], df, vectorizer, nn)
+        with st.spinner("⏳ Searching for recipes..."):
+            recipes = find_similar_recipes(detected_labels, df, vectorizer, nn)
 
-            st.session_state["recipes"] = recipes
-            st.session_state["detected"] = (top_label, top_prob)
-
-    else:
-        st.info("Send an image to start.")
+        st.session_state["recipes"] = recipes
 
 with col2:
-    st.header("🍽️ Suggested Recipes")
+    detected_labels = st.session_state.get("detected_labels", [])
+    if detected_labels:
+        st.markdown("<h2 style='color:#008DF5;'>🛒 Detected Ingredients</h2>", unsafe_allow_html=True)
+        st.markdown(
+            f"<h2 style='font-size:28px;'>{', '.join([label.capitalize() for label in detected_labels])}</h2>",
+            unsafe_allow_html=True
+        )
 
+    st.markdown("<h2 style='color:#008DF5;'>🍽️ Suggested Recipes</h2>", unsafe_allow_html=True)
     recipes = st.session_state.get("recipes", None)
 
     if recipes:
         for r in recipes:
-            st.markdown(f"### {r['title']}")
-
+            st.markdown(f"<h3 style='color:#56B1F5;'>{r['title']}</h3>", unsafe_allow_html=True)
             try:
                 ingredients_list = ast.literal_eval(r['ingredients'])
             except Exception:
@@ -152,17 +160,14 @@ with col2:
                 directions_list = [r['directions']]
 
             ing_col, dir_col = st.columns(2)
-
             with ing_col:
-                st.markdown('<p style="font-size:22px; font-weight:bold;">🛒 Ingredients:</p>', unsafe_allow_html=True)
-                for i, ing in enumerate(ingredients_list, 1):
-                    st.markdown(f'<p style="font-size:18px;">{i}. {ing}</p>', unsafe_allow_html=True)
-
+                st.markdown('<p style="font-size:22px; font-weight:bold; color:#56B1F5;">🛒 Ingredients:</p>', unsafe_allow_html=True)
+                for ing in ingredients_list:
+                    st.markdown(f'<p style="font-size:20px;">&#8226; {ing}</p>', unsafe_allow_html=True)  # &#8226; é •
             with dir_col:
-                st.markdown('<p style="font-size:22px; font-weight:bold;">📖 Directions:</p>', unsafe_allow_html=True)
-                for i, step in enumerate(directions_list, 1):
-                    st.markdown(f'<p style="font-size:18px;">{i}. {step.strip()}</p>', unsafe_allow_html=True)
-
-        st.markdown("---")
+                st.markdown('<p style="font-size:22px; font-weight:bold; color:#56B1F5;">📖 Directions:</p>', unsafe_allow_html=True)
+                for step in directions_list:
+                    st.markdown(f'<p style="font-size:20px;">&#8226; {step.strip()}</p>', unsafe_allow_html=True)
+            st.markdown("---")
     else:
-        st.info("Recipes will appear here after classification.")
+        st.info("Recipes will appear here after sending ingredient photos.")
