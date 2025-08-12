@@ -9,7 +9,7 @@ import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 from kaggle.api.kaggle_api_extended import KaggleApi
-
+import json 
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
@@ -28,15 +28,25 @@ def setup_kaggle_token():
     os.makedirs(kaggle_dir, exist_ok=True)
     kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
 
-    if not os.path.exists(kaggle_json_path):
-        if "KAGGLE_JSON" in st.secrets:
+    if os.path.exists(kaggle_json_path):
+        return True
+    
+    if "KAGGLE_JSON" in st.secrets:
+        try:
+            kaggle_token = st.secrets["KAGGLE_JSON"]
+            if isinstance(kaggle_token, str):
+                kaggle_token = json.loads(kaggle_token)
+
             with open(kaggle_json_path, "w") as f:
-                f.write(st.secrets["KAGGLE_JSON"])
+                json.dump(kaggle_token, f)
             os.chmod(kaggle_json_path, 0o600)
-        else:
-            st.warning("Kaggle API token not found.")
+            return True
+        except Exception as e:
+            st.error(f"Erro ao configurar Kaggle token: {e}")
             return False
-    return True
+
+    st.warning("Kaggle API token não encontrado.")
+    return False
 
 @st.cache_resource(show_spinner=False)
 def download_and_load_dataset():
