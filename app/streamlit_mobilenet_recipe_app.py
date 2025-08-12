@@ -24,29 +24,18 @@ CLASS_NAMES = ['banana', 'bread', 'carrot', 'cheese', 'chicken-meat', 'chocolate
                'egg', 'flour', 'lemon', 'milk', 'onion', 'pineapple', 'potato', 'rice', 'tomato']
 
 def setup_kaggle_token():
-    kaggle_dir = os.path.expanduser("~/.kaggle")
-    os.makedirs(kaggle_dir, exist_ok=True)
-    kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
-
-    if os.path.exists(kaggle_json_path):
+    if "KAGGLE_USERNAME" in st.secrets and "KAGGLE_KEY" in st.secrets:
+        os.environ["KAGGLE_USERNAME"] = st.secrets["KAGGLE_USERNAME"]
+        os.environ["KAGGLE_KEY"] = st.secrets["KAGGLE_KEY"]
         return True
-    
-    if "KAGGLE_JSON" in st.secrets:
-        try:
-            kaggle_token = st.secrets["KAGGLE_JSON"]
-            if isinstance(kaggle_token, str):
-                kaggle_token = json.loads(kaggle_token)
-
-            with open(kaggle_json_path, "w") as f:
-                json.dump(kaggle_token, f)
-            os.chmod(kaggle_json_path, 0o600)
+    else:
+        kaggle_dir = os.path.expanduser("~/.kaggle")
+        kaggle_json_path = os.path.join(kaggle_dir, "kaggle.json")
+        if os.path.exists(kaggle_json_path):
             return True
-        except Exception as e:
-            st.error(f"Erro ao configurar Kaggle token: {e}")
+        else:
+            st.warning("Kaggle credentials not found: neither env vars in secrets nor kaggle.json file.")
             return False
-
-    st.warning("Kaggle API token não encontrado.")
-    return False
 
 @st.cache_resource(show_spinner=False)
 def download_and_load_dataset():
