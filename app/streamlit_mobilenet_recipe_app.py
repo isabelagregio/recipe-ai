@@ -9,7 +9,8 @@ import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 from kaggle.api.kaggle_api_extended import KaggleApi
-import zipfile
+import json 
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
 MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'mobilenet_recipe_ai_ingredients.keras')
@@ -53,13 +54,8 @@ def download_and_load_dataset():
 
     if not os.path.exists(LOCAL_DATA_PATH):
         st.info("Downloading dataset from Kaggle...")
-        zip_path = os.path.join(BASE_DIR, '..', 'data', 'dataset.zip')
-        api.dataset_download_files(KAGGLE_DATASET, path=os.path.join(BASE_DIR, '..', 'data'), unzip=False)
+        api.dataset_download_file(KAGGLE_DATASET, DATA_FILE, path=os.path.join(BASE_DIR, '..', 'data'), unzip=True)
 
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(os.path.join(BASE_DIR, '..', 'data'))
-
-    df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
     df = pd.read_csv(LOCAL_DATA_PATH).dropna().reset_index(drop=True)
     df["NER_list"] = df["NER"].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
     df["NER_list_str"] = df["NER_list"].apply(lambda lst: str(lst))
