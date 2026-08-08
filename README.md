@@ -27,4 +27,7 @@ Built with Streamlit, TensorFlow, and scikit-learn, this project offers an intui
 
 ### 💻 Link to project: https://recipe-ai-generator.streamlit.app/
 
+![Recipe AI App](stock-price-prediction-app.png)
+
+
 #### Recipe Dataset Credit: https://www.kaggle.com/datasets/paultimothymooney/recipenlg
