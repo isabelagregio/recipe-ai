@@ -45,7 +45,7 @@ The Streamlit application downloads the model from the Hugging Face Hub and cach
 
 ### 💻 Link to project: https://recipe-ai-generator.streamlit.app/
 
-![Recipe AI App](recipe_ai_page.png)
+![Recipe AI App](recipe_ai.png)
 
 
 #### Recipe Dataset Credit: https://www.kaggle.com/datasets/paultimothymooney/recipenlg
