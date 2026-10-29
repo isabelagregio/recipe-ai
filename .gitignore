@@ -1,1 +1,40 @@
 data/RecipeNLG_dataset.csv
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+secrets.toml
+.streamlit/secrets.toml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+.cache/

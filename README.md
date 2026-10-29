@@ -25,6 +25,24 @@ Built with Streamlit, TensorFlow, and scikit-learn, this project offers an intui
   - “**recipe_generator.ipynb**”: Analysis of "RecipeNLG_dataset" from Kaggle, with numerous cooking recipes. It also contains the training of the recommendation model using the Nearest Neighbors algorithm from sckit-learn library.
   - “**ingredient_classification.ipynb**”: MobileNetV2 training using the deep learning API Keras, from TensorFlow, using the generated ingredients dataset.
 
+
+### 🤗 Model on Hugging Face
+
+The ingredient classification model is publicly available on
+[Hugging Face](https://huggingface.co/isabelagregio/recipe-ai-ingredient-classifier).
+
+The model uses MobileNetV2 with TensorFlow/Keras to classify food images into 15 ingredient categories.
+
+**Model details:**
+- Architecture: MobileNetV2
+- Framework: TensorFlow / Keras
+- Input: 224 × 224 RGB images
+- Classes: 15 food ingredients
+- Reported classification accuracy: 90.57%
+
+The Streamlit application downloads the model from the Hugging Face Hub and caches it locally for inference. For model usage, preprocessing instructions, and limitations, see the Hugging Face Model Card.
+
+
 ### 💻 Link to project: https://recipe-ai-generator.streamlit.app/
 
 ![Recipe AI App](recipe_ai_page.png)

@@ -7,3 +7,4 @@ streamlit
 tensorflow==2.19.0
 numpy
 pillow
+huggingface_hub>=0.30,<2
